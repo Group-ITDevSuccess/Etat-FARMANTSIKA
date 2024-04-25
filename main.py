@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
 from entity.export import exportDataFrameEncaissement
-from entity.query import getDateInSQLServer
+from entity.query import connexionSQlServer, getDataLink
 
 
 class WinForm(QWidget):
@@ -438,7 +438,7 @@ class WinForm(QWidget):
         return f"{diff_days} Jour(s) {hours:02d}:{minutes:02d}:{seconds:02d}"
 
     def iter_destination_json(self):
-        # Load existing data from historique.json (or create an empty list if not found)
+        # Load existing df from historique.json (or create an empty list if not found)
         try:
             with open('historique.json', 'r', encoding='utf-8') as file:
                 historique_data = json.load(file)
@@ -462,23 +462,21 @@ class WinForm(QWidget):
                 })
                 next_no += 1  # Increment N° for the next entry
 
-        # Combine existing and new data (historique_data + save)
+        # Combine existing and new df (historique_data + save)
         combined_data = historique_data + save
 
-        # Save the combined data to historique.json
+        # Save the combined df to historique.json
         with open('historique.json', 'w', encoding='utf-8') as file:
             json.dump(combined_data, file, indent=4)
 
-        self.load_historique_from_json()  # Reload data to update table
+        self.load_historique_from_json()  # Reload df to update table
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    win = WinForm()
-    win.show()
-    sys.exit(app.exec_())
-# data = getDateInSQLServer()
-# if data is not None:
-#     exportDataFrameEncaissement(data)
-# else:
-#     print("Data est vide !")
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     win = WinForm()
+#     win.show()
+#     sys.exit(app.exec_())
+connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
+
+data = getDataLink(connexion)
