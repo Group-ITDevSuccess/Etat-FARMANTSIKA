@@ -1,5 +1,7 @@
 import datetime
 import json
+import smtplib
+import ssl
 import sys
 import qdarkstyle
 from PyQt5.QtWidgets import (
@@ -20,6 +22,7 @@ from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
 from entity.export import exportDataFrameEncaissement
 from entity.query import connexionSQlServer, getDataLink
+from utils import get_today, write_log
 
 
 class WinForm(QWidget):
@@ -357,6 +360,7 @@ class WinForm(QWidget):
         diff = current_time.secsTo(target_datetime)
 
         if diff <= 0:
+            print("Zero")
             self.iter_destination_json()
             self.recalculate_target_time()
             return
@@ -452,14 +456,31 @@ class WinForm(QWidget):
         save = []
         with open('destination.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
+        connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
+        data = getDataLink(connexion)
+        context = ssl.create_default_context()
+        message = f"""
+            Bonjour, \n
+            Voici ci-jointe l'état de FARMANTSIKA du {get_today().strftime("%d/%m/%Y, %H:%M:%S")} \n\n
+            Cordialement,
+        """
         for item in data:
             if item['Status']:
+                status = False
+                try:
+                    with smtplib.SMTP_SSL("mail.inviso-group.com", 587, context=context) as server:
+                        server.login("sagex3@inviso-group.com", 'Epbt2_9)Hw')
+                        server.sendmail('sagex3@inviso-group.com', item['Email'], message)
+                    status = True
+                except Exception as e:
+                    write_log(str(e))
+
                 save.append({
                     'No': next_no,
                     'Destinataire': item['Nom'],
                     'Email': item['Email'],
                     'DateTime': datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    'Status': True
+                    'Status': status
                 })
                 next_no += 1  # Increment N° for the next entry
 
@@ -478,6 +499,4 @@ if __name__ == '__main__':
     win = WinForm()
     win.show()
     sys.exit(app.exec_())
-# connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
-#
-# data = getDataLink(connexion)
+
