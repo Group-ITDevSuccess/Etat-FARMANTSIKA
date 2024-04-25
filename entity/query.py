@@ -44,4 +44,7 @@ def getDateInSQLServer():
             print(f"DATA: {data}")
         except Exception as e:
             write_log(f"Erreur Exception : {str(e)}")
+        finally:
+            connexion.close()
+
         return data

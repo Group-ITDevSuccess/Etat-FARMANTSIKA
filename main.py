@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
-from entity.export import exportDataFrame
+from entity.export import exportDataFrameEncaissement
 from entity.query import getDateInSQLServer
 
 
@@ -472,11 +472,13 @@ class WinForm(QWidget):
         self.load_historique_from_json()  # Reload data to update table
 
 
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     win = WinForm()
-#     win.show()
-#     sys.exit(app.exec_())
-data = getDateInSQLServer()
-
-exportDataFrame(data)
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    win = WinForm()
+    win.show()
+    sys.exit(app.exec_())
+# data = getDateInSQLServer()
+# if data is not None:
+#     exportDataFrameEncaissement(data)
+# else:
+#     print("Data est vide !")
