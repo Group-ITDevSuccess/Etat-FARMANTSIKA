@@ -4,5 +4,12 @@
       "base": "FARMANTSIKA2020",
       "server": "Srv-sagei7-004"
     }
-  ]
+  ],
+  "SQL": {
+    "lists": "SELECT R_Intitule FROM F_CREGLEMENT INNER JOIN P_REGLEMENT ON N_Reglement=cbIndice WHERE year(RG_Date)=2024 GROUP BY R_Intitule",
+    "details": "SELECT F_DOCLIGNE.DO_Piece, AR_Ref,DL_Design,DL_QTE,DL_MontantTTC/DL_qte, DL_MontantTTC,R_Intitule FROM F_DOCLIGNE  inner join F_DOCREGL on F_DOCLIGNE.DO_Piece=F_DOCREGL.DO_Piece and F_DOCLIGNE.DO_Type=F_DOCREGL.DO_Type inner join P_REGLEMENT on N_Reglement=cbIndice WHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0 and DO_Date='{today}'",
+    "year": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT ON N_Reglement=cbIndice WHERE year(RG_Date)=2024 GROUP BY R_Intitule",
+    "month": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT on N_Reglement=cbIndice WHERE  year(RG_Date)=2024 AND month(rg_date)=4 GROUP BY R_Intitule",
+    "day": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT on N_Reglement=cbIndice WHERE  RG_Date='{today}' GROUP BY R_Intitule"
+  }
 }
