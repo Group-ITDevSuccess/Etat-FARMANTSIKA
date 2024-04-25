@@ -17,6 +17,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
+from entity.query import getDateInSQLServer
+
 
 class WinForm(QWidget):
     def __init__(self, parent=None):
@@ -469,8 +471,10 @@ class WinForm(QWidget):
         self.load_historique_from_json()  # Reload data to update table
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    win = WinForm()
-    win.show()
-    sys.exit(app.exec_())
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     win = WinForm()
+#     win.show()
+#     sys.exit(app.exec_())
+
+getDateInSQLServer()
