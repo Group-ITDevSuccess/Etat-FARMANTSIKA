@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
+
 from entity.export import exportDataFrameEncaissement
 from entity.query import getDateInSQLServer
 
@@ -54,7 +55,7 @@ class WinForm(QWidget):
         self.load_historique_from_json()
 
         self.target_time = None
-        self.target_day = None
+        # self.target_day = None
         self.data_destination = []
         self.data_historique = []
 
@@ -67,9 +68,9 @@ class WinForm(QWidget):
         self.target_second_edit = QLineEdit('0')
         self.target_second_edit.setFixedWidth(50)
 
-        self.day_label = QLabel('Jour:')
-        self.day_combo = QComboBox()
-        self.day_combo.addItems(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'])
+        # self.day_label = QLabel('Jour:')
+        # self.day_combo = QComboBox()
+        #  self.day_combo.addItems(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'])
 
         self.listFile = QListWidget()
         self.label = QLabel('Etat automatique de la liste des articles')
@@ -136,8 +137,8 @@ class WinForm(QWidget):
         target_time_layout.addWidget(self.target_minute_edit)
         target_time_layout.addWidget(QLabel('Second: '))
         target_time_layout.addWidget(self.target_second_edit)
-        target_time_layout.addWidget(self.day_label)
-        target_time_layout.addWidget(self.day_combo)
+        # target_time_layout.addWidget(self.day_label)
+        # target_time_layout.addWidget(self.day_combo)
         target_time_layout.addWidget(self.startBtn)  # Ajouter le bouton "Start" après les champs Heure
         target_time_layout.addWidget(self.endBtn)  # Ajouter le bouton "Stop" après le bouton "Start"
 
@@ -153,6 +154,7 @@ class WinForm(QWidget):
         # self.search_bar.textChanged.connect(self.filter_historique_table)
 
         self.setLayout(layout)
+
 
     def filter_historique_table(self, search_text):
         self.table_historique.setRowCount(0)  # Clear the table before filtering
@@ -340,13 +342,18 @@ class WinForm(QWidget):
             print("Fichier Introuvable !")
             pass
 
+    # affichage de la minuterie de compte à rebours en fonction du temps actuel et du temps cible
     def update_countdown(self):
         current_time = QDateTime.currentDateTime()
-        if self.target_time is None or self.target_day is None:
-            self.label.setText("Please set target time and day")
+        if self.target_time is None:
+            self.label.setText("Please set target time")
             return
 
-        target_datetime = self.target_time.addDays(self.get_target_day_offset())
+        # Calculer la prochaine date et heure d'exécution en ajoutant un jour à la fois
+        target_datetime = self.target_time
+        while current_time >= target_datetime:
+            target_datetime = target_datetime.addDays(1)
+
         diff = current_time.secsTo(target_datetime)
 
         if diff <= 0:
@@ -358,8 +365,13 @@ class WinForm(QWidget):
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        time_left = f"{days} Jour(s) {hours:02d}:{minutes:02d}:{seconds:02d}"
+        time_left = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         self.label.setText(time_left)
+
+        if time_left == "00:00:00":
+            return "Envoyé avec succès"
+        return time_left; 
+        
 
     def start_countdown(self):
         try:
@@ -369,7 +381,7 @@ class WinForm(QWidget):
 
             self.target_time = QDateTime.currentDateTime()
             self.target_time.setTime(QTime(target_hour, target_minute, target_second))
-            self.target_day = self.day_combo.currentText()
+            # self.target_day = self.day_combo.currentText()
 
             self.timer.start(1000)  # Update every second
             self.label.setText(self.get_time_remaining_text())
@@ -390,31 +402,15 @@ class WinForm(QWidget):
             pass
 
     def get_target_day_offset(self):
-        days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
-        current_day_index = QDateTime.currentDateTime().date().dayOfWeek()
-        target_day_index = days.index(self.day_combo.currentText())
-        days_difference = target_day_index - current_day_index
-        if days_difference < 0:
-            days_difference += 7
-        # print(f"Target: {target_day_index} | Current: {current_day_index} => {days_difference}")
-
-        if days_difference < 0:
-            current_time = QDateTime.currentDateTime().time()
-            target_time = QTime(
-                int(self.target_hour_edit.text()),
-                int(self.target_minute_edit.text()),
-                int(self.target_second_edit.text())
-            )
-            if current_time <= target_time:
-                days_difference = 7
-        return days_difference
+        return 1
 
     def recalculate_target_time(self):
-        self.target_time = self.target_time.addDays(7)
+        self.target_time = self.target_time.addDays(1)  # Ajoutez un jour au lieu de 7 jours
         self.label.setText(self.get_time_remaining_text())
+        
 
     def get_time_remaining_text(self):
-        return "Recalculating for Next Week" if self.target_time is None else self.calculate_time_remaining()
+        return "Recalculating for Next day" if self.target_time is None else self.calculate_time_remaining()
 
     def calculate_time_remaining(self):
         current_time = QDateTime.currentDateTime()
@@ -435,7 +431,12 @@ class WinForm(QWidget):
         hours, remainder = divmod(diff_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        return f"{diff_days} Jour(s) {hours:02d}:{minutes:02d}:{seconds:02d}"
+        time_left = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        if time_left == "00:00:00":
+            print('email envoyé')
+        
+        return time_left
 
     def iter_destination_json(self):
         # Load existing data from historique.json (or create an empty list if not found)
