@@ -21,15 +21,19 @@ def connexionSQlServer(server, base):
 
 def getDateInSQLServer():
     connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
+    data = {}
+
     if connexion:
         try:
             finds = extract_values_in_json('SQL')
-            # lists = finds['lists']
-            data = {}
+            dates = get_today()
             for key, value in finds.items():
                 if key not in ['lists', 'details']:
                     with connexion.cursor() as cursor:
-                        query = str(value).replace("{today}", get_today())
+                        query = str(value).replace(
+                            "{today}", dates.strftime('%m/%d/%Y')
+                        ).replace("{year}", dates.strftime('%Y')
+                                  ).replace('{month}', dates.strftime('%m'))
                         print(f"Query : {query}")
                         cursor.execute(query)
                         rows = cursor.fetchall()
@@ -40,5 +44,4 @@ def getDateInSQLServer():
             print(f"DATA: {data}")
         except Exception as e:
             write_log(f"Erreur Exception : {str(e)}")
-
-
+        return data

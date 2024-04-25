@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
+from entity.export import exportDataFrame
 from entity.query import getDateInSQLServer
 
 
@@ -476,5 +477,6 @@ class WinForm(QWidget):
 #     win = WinForm()
 #     win.show()
 #     sys.exit(app.exec_())
+data = getDateInSQLServer()
 
-getDateInSQLServer()
+exportDataFrame(data)

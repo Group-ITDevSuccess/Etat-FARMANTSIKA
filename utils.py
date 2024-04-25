@@ -7,7 +7,7 @@ today = datetime.today()
 
 
 def get_today():
-    return today.strftime('%m/%d/%Y')
+    return today
 
 
 def write_log(logs, level=None):
