@@ -472,11 +472,11 @@ class WinForm(QWidget):
         self.load_historique_from_json()  # Reload df to update table
 
 
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     win = WinForm()
-#     win.show()
-#     sys.exit(app.exec_())
-connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
-
-data = getDataLink(connexion)
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    win = WinForm()
+    win.show()
+    sys.exit(app.exec_())
+# connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
+#
+# data = getDataLink(connexion)

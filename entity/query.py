@@ -112,7 +112,7 @@ def getDataLink(connexion):
                 wb1.remove(wb1['Sheet'])
 
             # Enregistrer le classeur Excel fusionné dans le dossier "storage"
-            merged_file_path = os.path.join(storage_dir, f'ETAT FARMANTSIKAç{get_today().strftime("%d-%m-%Y")}.xlsx')
+            merged_file_path = os.path.join(storage_dir, f'ETAT FARMANTSIKA_{get_today().strftime("%d-%m-%Y")}.xlsx')
             wb1.save(merged_file_path)
 
             print(f"Fichier fusionné enregistré à : {merged_file_path}")
