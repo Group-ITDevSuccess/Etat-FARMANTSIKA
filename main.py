@@ -49,7 +49,7 @@ class WinForm(QWidget):
         self.target_hour_edit = None
         self.target_time_label = None
         self.setFixedSize(627, 600)
-        self.setWindowTitle('ID Motors')
+        self.setWindowTitle('Mean Shop')
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Recherche dans l'historique")  # Search in history
 
@@ -521,7 +521,7 @@ Cordialement,
                         self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
                                                attachment_filename=filename)
                         status = True
-                        print(f"Mail envoyer vers : {item['Email']}")
+                        # print(f"Mail envoyer vers : {item['Email']}")
                     except Exception as e:
                         write_log(str(e))
                     save.append({

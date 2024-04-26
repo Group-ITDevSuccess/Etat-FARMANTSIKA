@@ -1,0 +1,14 @@
+[
+    {
+        "Id": "1",
+        "Nom": "Test",
+        "Email": "muriel.raharison@inviso-group.com",
+        "Status": false
+    },
+    {
+        "Id": "2",
+        "Nom": "Muriel",
+        "Email": "muriel.raharison@inviso-group.com",
+        "Status": true
+    }
+]
