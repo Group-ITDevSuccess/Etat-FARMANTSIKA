@@ -1,3 +1,4 @@
+import asyncio
 import os
 from copy import copy
 
@@ -14,6 +15,7 @@ from utils import write_log, extract_values_in_json, get_today
 def connexionSQlServer(server, base):
     conn = None
     value = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={base};UID=reader;PWD=m1234"
+    print(value)
     try:
         conn = pyodbc.connect(value)
     except pyodbc.Error as e:
@@ -27,7 +29,7 @@ def connexionSQlServer(server, base):
     return conn
 
 
-def getDataLink(connexion):
+async def getDataLink(connexion):
     if connexion:
         try:
             finds = extract_values_in_json('SQL')

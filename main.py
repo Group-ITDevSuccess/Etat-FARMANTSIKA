@@ -3,6 +3,7 @@ import json
 import smtplib
 import ssl
 import sys
+import asyncio
 import qdarkstyle
 from PyQt5.QtWidgets import (
     QWidget,
@@ -454,10 +455,13 @@ class WinForm(QWidget):
 
         # Process destinations and create new entries
         save = []
+        with open('config.json', 'r', encoding='utf-8') as file:
+            json_file = json.load(file)
         with open('destination.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
-        connexion = connexionSQlServer(server="Srv-sagei7-004", base="FARMANTSIKA2020")
-        data = getDataLink(connexion)
+        print(f"On a : {json_file['SOCIETE'][0]['base']}")
+        # connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'], base=json_file['SOCIETE'][0]['base'])
+        # data = getDataLink(connexion)
         if data:
             context = ssl.create_default_context()
             message = f"""
