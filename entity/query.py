@@ -29,7 +29,7 @@ def connexionSQlServer(server, base):
     return conn
 
 
-async def getDataLink(connexion):
+def getDataLink(connexion):
     if connexion:
         try:
             finds = extract_values_in_json('SQL')

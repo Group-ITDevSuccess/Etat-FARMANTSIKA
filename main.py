@@ -1,10 +1,13 @@
 import datetime
 import json
+import os
 import smtplib
-import ssl
 import sys
-import asyncio
+
+from email.message import EmailMessage
+
 import qdarkstyle
+
 from PyQt5.QtWidgets import (
     QWidget,
     QPushButton,
@@ -20,8 +23,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QDateTime, Qt, QTime
 
-
-from entity.export import exportDataFrameEncaissement
 from entity.query import connexionSQlServer, getDataLink
 from utils import get_today, write_log
 
@@ -81,6 +82,7 @@ class WinForm(QWidget):
         self.label.setAlignment(Qt.AlignCenter)  # Align label text to center
         self.startBtn = QPushButton('Start')
         self.endBtn = QPushButton('Stop')
+        self.executeBtn = QPushButton('Execute')
 
         # Création d'un QTabWidget pour gérer les onglets
         self.tab_widget = QTabWidget()
@@ -145,6 +147,7 @@ class WinForm(QWidget):
         # target_time_layout.addWidget(self.day_combo)
         target_time_layout.addWidget(self.startBtn)  # Ajouter le bouton "Start" après les champs Heure
         target_time_layout.addWidget(self.endBtn)  # Ajouter le bouton "Stop" après le bouton "Start"
+        target_time_layout.addWidget(self.executeBtn)  # Ajouter le bouton "Stop" après le bouton "Start"
 
         layout.addLayout(target_time_layout)
         layout.addWidget(self.label)
@@ -152,6 +155,7 @@ class WinForm(QWidget):
 
         self.startBtn.clicked.connect(self.start_countdown)
         self.endBtn.clicked.connect(self.end_timer)
+        self.executeBtn.clicked.connect(self.iter_destination_json)
 
         self.table_destinataire.setColumnHidden(0, True)
         self.table_historique.setColumnHidden(0, True)
@@ -159,6 +163,41 @@ class WinForm(QWidget):
 
         self.setLayout(layout)
 
+    def load_config(self):
+        with open('config.json', 'r', encoding='utf-8') as file:
+            json_file = json.load(file)
+        return json_file
+
+    def custom_send_email(self, recipient_name, recipient_email, attachment_filename):
+        sender_email = "sagex3@inviso-group.com"
+        message_text = f"""
+Bonjour Mr {recipient_name},
+
+Voici ci-jointe l'état de FARMANTSIKA du {get_today().strftime("%d/%m/%Y")}
+
+Cordialement,
+
+============= Mail Automatique =================
+
+                www.inviso-group.com
+                
+============= Sage X3 - 2024 ====================
+"""
+        message = EmailMessage()
+        message["Subject"] = f"ETAT FARMANTSIKA du {get_today().strftime('%d/%m/%Y')}"
+        message["From"] = sender_email
+        message["To"] = recipient_email
+        message["Cc"] = "sage@inviso-group.com, muriel@inviso-group.com"
+        message.set_content(message_text)
+        with open(attachment_filename, "rb") as file:
+            content = file.read()
+            attached_filename = os.path.basename(attachment_filename)
+            message.add_attachment(content, maintype="application", subtype="octet-stream",
+                                   filename=attached_filename)
+        with smtplib.SMTP("mail.inviso-group.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, 'Epbt2_9)Hw')
+            server.send_message(message)
 
     def filter_historique_table(self, search_text):
         self.table_historique.setRowCount(0)  # Clear the table before filtering
@@ -255,13 +294,27 @@ class WinForm(QWidget):
                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirm_delete == QMessageBox.Yes:
             id_item = self.table_historique.item(row, 0)
+            name_item = self.table_historique.item(row, 1)
+            email_item = self.table_historique.item(row, 2)
             if id_item is not None:
                 try:
                     id_to_resend = id_item.text()
-                    new_status = True
+                    new_status = False
+                    try:
+                        json_file = self.load_config()
+                        connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'],
+                                                       base=json_file['SOCIETE'][0]['base'])
+                        filename = getDataLink(connexion)
+                        self.custom_send_email(recipient_name=name_item, recipient_email=email_item,
+                                               attachment_filename=filename)
+                        new_status = True
+                        print(f"Mail envoyer vers : {email_item}")
+
+                    except Exception as e:
+                        write_log(str(e))
 
                     self.modifier_objet(id_to_resend, new_status)
-                    # if modif: print(f"Modification Faite sur N° {id_to_resend}")
+                    print(f"Modification Faite sur N° {id_to_resend}")
                 except Exception as e:
                     print(f"Erreur : {str(e)}")
                 finally:
@@ -375,8 +428,7 @@ class WinForm(QWidget):
 
         if time_left == "00:00:00":
             return "Envoyé avec succès"
-        return time_left; 
-        
+        return time_left
 
     def start_countdown(self):
         try:
@@ -412,7 +464,6 @@ class WinForm(QWidget):
     def recalculate_target_time(self):
         self.target_time = self.target_time.addDays(1)  # Ajoutez un jour au lieu de 7 jours
         self.label.setText(self.get_time_remaining_text())
-        
 
     def get_time_remaining_text(self):
         return "Recalculating for Next day" if self.target_time is None else self.calculate_time_remaining()
@@ -440,7 +491,7 @@ class WinForm(QWidget):
 
         if time_left == "00:00:00":
             print('email envoyé')
-        
+
         return time_left
 
     def iter_destination_json(self):
@@ -455,31 +506,24 @@ class WinForm(QWidget):
 
         # Process destinations and create new entries
         save = []
-        with open('config.json', 'r', encoding='utf-8') as file:
-            json_file = json.load(file)
+
         with open('destination.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
-        print(f"On a : {json_file['SOCIETE'][0]['base']}")
-        # connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'], base=json_file['SOCIETE'][0]['base'])
-        # data = getDataLink(connexion)
+        json_file = self.load_config()
+        connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'], base=json_file['SOCIETE'][0]['base'])
+        filename = getDataLink(connexion)
+
         if data:
-            context = ssl.create_default_context()
-            message = f"""
-                Bonjour, \n
-                Voici ci-jointe l'état de FARMANTSIKA du {get_today().strftime("%d/%m/%Y, %H:%M:%S")} \n\n
-                Cordialement,
-            """
             for item in data:
                 if item['Status']:
                     status = False
                     try:
-                        with smtplib.SMTP_SSL("mail.inviso-group.com", 587, context=context) as server:
-                            server.login("sagex3@inviso-group.com", 'Epbt2_9)Hw')
-                            server.sendmail('sagex3@inviso-group.com', item['Email'], message)
+                        self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
+                                               attachment_filename=filename)
                         status = True
+                        print(f"Mail envoyer vers : {item['Email']}")
                     except Exception as e:
                         write_log(str(e))
-
                     save.append({
                         'No': next_no,
                         'Destinataire': item['Nom'],
@@ -504,4 +548,3 @@ if __name__ == '__main__':
     win = WinForm()
     win.show()
     sys.exit(app.exec_())
-
