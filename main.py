@@ -518,8 +518,8 @@ Cordialement,
                 if item['Status']:
                     status = False
                     try:
-                        # self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
-                        #                        attachment_filename=filename)
+                        self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
+                                               attachment_filename=filename)
                         status = True
                         print(f"Mail envoyer vers : {item['Email']}")
                     except Exception as e:
