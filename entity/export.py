@@ -39,6 +39,13 @@ def exportDataFrameEncaissement(df):
                  sum(amounts['year'] for amounts in formatted_data.values())]
     ws.append(total_row)
 
+    # Formater les cellules avec des nombres au format français
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=2, max_col=ws.max_column):
+        for cell in row:
+            try:
+                cell.number_format = '#,##0.00'
+            except:
+                pass
     # Ajouter des bordures aux cellules
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
         for cell in row:
@@ -90,6 +97,8 @@ def exportDataFrameDetails(df):
         for c_idx, value in enumerate(row[1], start=1):
             cell = ws.cell(row=r_idx, column=c_idx, value=value)
 
+
+
     # Ajouter des bordures aux données
     for row in ws.iter_rows(min_row=1, max_row=len(df) + 1, min_col=1, max_col=len(df.columns)):
         for cell in row:
@@ -112,6 +121,12 @@ def exportDataFrameDetails(df):
             cell.fill = openpyxl.styles.PatternFill(start_color="0072BC", end_color="0072BC", fill_type="solid")
             cell.font = Font(bold=True, color='FFFFFF')
 
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=2, max_col=ws.max_column):
+        for cell in row:
+            try:
+                cell.number_format = '#,##0.00'
+            except:
+                pass
     # Espacer les colonnes en fonction des données
     for col in ws.columns:
         max_length = 0

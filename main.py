@@ -173,7 +173,7 @@ class WinForm(QWidget):
         message_text = f"""
 Bonjour Mr {recipient_name},
 
-Voici ci-jointe l'état de FARMANTSIKA du {get_today().strftime("%d/%m/%Y")}
+Voici ci-jointe l'Etat The Meat Shop  du {get_today().strftime("%d/%m/%Y")}
 
 Cordialement,
 
@@ -184,7 +184,7 @@ Cordialement,
 ============= Sage X3 - 2024 ====================
 """
         message = EmailMessage()
-        message["Subject"] = f"ETAT FARMANTSIKA du {get_today().strftime('%d/%m/%Y')}"
+        message["Subject"] = f"Etat The Meat Shop du {get_today().strftime('%d/%m/%Y')}"
         message["From"] = sender_email
         message["To"] = recipient_email
         message["Cc"] = "sage@inviso-group.com, muriel@inviso-group.com"
@@ -518,8 +518,8 @@ Cordialement,
                 if item['Status']:
                     status = False
                     try:
-                        self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
-                                               attachment_filename=filename)
+                        # self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
+                        #                        attachment_filename=filename)
                         status = True
                         print(f"Mail envoyer vers : {item['Email']}")
                     except Exception as e:
