@@ -19,24 +19,29 @@ def exportDataFrameEncaissement(df):
         for value in values:
             intitule = value[0]
             amount = value[1]
+            # print(intitule, value, key)
+
             if intitule not in formatted_data:
                 formatted_data[intitule] = {'day': 0, 'month': 0, 'year': 0}
             formatted_data[intitule][key] = amount
-
+    formatted_data['Fond de Caisse'] = {'day': 0, 'month': 200000, 'year': 200000}
     # Écrire les en-têtes des colonnes avec mise en forme
-    header_row = ['Intitulé', f'{today.strftime("%d/%m/%Y")}', 'Cumul Mois', 'Cumul Année']
+    header_row = ['INTITULE', f'{today.strftime("%d/%m/%Y")}', 'CUMUL MOIS', 'CUMUL ANNEE']
     ws.append(header_row)
     for cell in ws[1]:
         cell.font = Font(bold=True)  # Rendre l'entête en gras
 
     # Écrire les données dans le fichier Excel avec mise en forme
     for intitule, amounts in formatted_data.items():
+        if intitule == 'Espèces':
+            # print(f"Espèces : {amounts['year']} => {amounts['year'] - 200000}")
+            amounts['year'] = amounts['year'] - 200000
         ws.append([intitule, amounts['day'], amounts['month'], amounts['year']])
 
     # Ajouter une ligne TOTAL
     total_row = ['TOTAL', sum(amounts['day'] for amounts in formatted_data.values()),
-                 sum(amounts['month'] for amounts in formatted_data.values()),
-                 sum(amounts['year'] for amounts in formatted_data.values())]
+                 sum(amounts['month'] for amounts in formatted_data.values()) - 200000,
+                 sum(amounts['year'] for amounts in formatted_data.values()) - 200000]
     ws.append(total_row)
 
     # Formater les cellules avec des nombres au format français
@@ -80,75 +85,76 @@ def exportDataFrameEncaissement(df):
     return os.path.abspath(file_path)
 
 
-def exportDataFrameDetails(df):
-    # Créer un nouveau classeur Excel
-    wb = openpyxl.Workbook()
-    # Sélectionner la première feuille de calcul
-    ws = wb.active
-    ws.title = "VENTE DU JOUR DETAIL"
+def exportDataFrameSimple(df, title, cols_total):
+    if df is not None and len(df.columns) > 0:
+        # Créer un nouveau classeur Excel
+        wb = openpyxl.Workbook()
+        # Sélectionner la première feuille de calcul
+        ws = wb.active
+        ws.title = title
 
-    # Ajouter l'en-tête de colonne
-    for c_idx, col_name in enumerate(df.columns, start=1):
-        cell = ws.cell(row=1, column=c_idx, value=col_name)
-        cell.fill = openpyxl.styles.PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+        # Ajouter l'en-tête de colonne
+        for c_idx, col_name in enumerate(df.columns, start=1):
+            cell = ws.cell(row=1, column=c_idx, value=col_name)
+            cell.fill = openpyxl.styles.PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 
-    # Ajouter les données du DataFrame à la feuille de calcul
-    for r_idx, row in enumerate(df.iterrows(), start=2):
-        for c_idx, value in enumerate(row[1], start=1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=value)
+        # Ajouter les données du DataFrame à la feuille de calcul
+        for r_idx, row in enumerate(df.iterrows(), start=2):
+            for c_idx, value in enumerate(row[1], start=1):
+                cell = ws.cell(row=r_idx, column=c_idx, value=value)
 
+        # Ajouter des bordures aux données
+        for row in ws.iter_rows(min_row=1, max_row=len(df) + 1, min_col=1, max_col=len(df.columns)):
+            for cell in row:
+                cell.border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
+                                                     right=openpyxl.styles.Side(style='thin'),
+                                                     top=openpyxl.styles.Side(style='thin'),
+                                                     bottom=openpyxl.styles.Side(style='thin'))
 
+        # Ajouter une ligne de total à la fin pour la somme des colonnes D, E et F
+        for c_idx, _ in enumerate(df.columns, start=1):
+            if c_idx in cols_total:  # Colonnes D, E et F (indices 3, 4 et 5)
+                total = df.iloc[:, c_idx - 1].sum()
+                cell = ws.cell(row=len(df) + 2, column=c_idx, value=total)
 
-    # Ajouter des bordures aux données
-    for row in ws.iter_rows(min_row=1, max_row=len(df) + 1, min_col=1, max_col=len(df.columns)):
-        for cell in row:
-            cell.border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
-                                                 right=openpyxl.styles.Side(style='thin'),
-                                                 top=openpyxl.styles.Side(style='thin'),
-                                                 bottom=openpyxl.styles.Side(style='thin'))
+        # Ajouter le texte "TOTAUX" et formater la ligne
+        totaux_row = len(df) + 2  # Ligne de sous-totaux
+        ws.cell(row=totaux_row, column=1, value='TOTAUX').font = Font(bold=True, color='FFFFFF')
+        for col in ws.iter_cols(min_row=totaux_row, max_row=totaux_row, min_col=1, max_col=len(df.columns)):
+            for cell in col:
+                cell.fill = openpyxl.styles.PatternFill(start_color="0072BC", end_color="0072BC", fill_type="solid")
+                cell.font = Font(bold=True, color='FFFFFF')
 
-    # Ajouter une ligne de total à la fin pour la somme des colonnes D, E et F
-    for c_idx, _ in enumerate(df.columns, start=1):
-        if c_idx in [4, 5, 6]:  # Colonnes D, E et F (indices 3, 4 et 5)
-            total = df.iloc[:, c_idx - 1].sum()
-            cell = ws.cell(row=len(df) + 2, column=c_idx, value=total)
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=2, max_col=ws.max_column):
+            for cell in row:
+                try:
+                    cell.number_format = '#,##0.00'
+                except:
+                    pass
+        # Espacer les colonnes en fonction des données
+        for col in ws.columns:
+            max_length = 0
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2
+            ws.column_dimensions[col[0].column_letter].width = adjusted_width
 
-    # Ajouter le texte "TOTAUX" et formater la ligne
-    totaux_row = len(df) + 2  # Ligne de sous-totaux
-    ws.cell(row=totaux_row, column=1, value='TOTAUX').font = Font(bold=True, color='FFFFFF')
-    for col in ws.iter_cols(min_row=totaux_row, max_row=totaux_row, min_col=1, max_col=len(df.columns)):
-        for cell in col:
-            cell.fill = openpyxl.styles.PatternFill(start_color="0072BC", end_color="0072BC", fill_type="solid")
-            cell.font = Font(bold=True, color='FFFFFF')
+        # Créer le dossier de stockage s'il n'existe pas
+        storage_dir = f'storage/{get_today().strftime("%d-%m-%Y")}'
+        if not os.path.exists(storage_dir):
+            os.makedirs(storage_dir)
 
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=2, max_col=ws.max_column):
-        for cell in row:
-            try:
-                cell.number_format = '#,##0.00'
-            except:
-                pass
-    # Espacer les colonnes en fonction des données
-    for col in ws.columns:
-        max_length = 0
-        for cell in col:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except:
-                pass
-        adjusted_width = (max_length + 2) * 1.2
-        ws.column_dimensions[col[0].column_letter].width = adjusted_width
+        # Sauvegarder le fichier Excel dans le dossier "storage"
+        file_path = os.path.join(storage_dir, f'{title}.xlsx')
+        # Enregistrer le classeur Excel
+        wb.save(file_path)
+        return os.path.abspath(file_path)
 
-    # Créer le dossier de stockage s'il n'existe pas
-    storage_dir = f'storage/{get_today().strftime("%d-%m-%Y")}'
-    if not os.path.exists(storage_dir):
-        os.makedirs(storage_dir)
-
-    # Sauvegarder le fichier Excel dans le dossier "storage"
-    file_path = os.path.join(storage_dir, 'DETAILS.xlsx')
-    # Enregistrer le classeur Excel
-    wb.save(file_path)
-    return os.path.abspath(file_path)
+    return None
 
 
 def merge_excel_files(excel_1_path, excel_2_path, merged_file_path):

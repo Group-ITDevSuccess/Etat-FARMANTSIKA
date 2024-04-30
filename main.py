@@ -49,7 +49,7 @@ class WinForm(QWidget):
         self.target_hour_edit = None
         self.target_time_label = None
         self.setFixedSize(627, 600)
-        self.setWindowTitle('Mean Shop')
+        self.setWindowTitle('Meat Shop')
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Recherche dans l'historique")  # Search in history
 
