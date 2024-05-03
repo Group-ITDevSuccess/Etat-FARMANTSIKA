@@ -29,11 +29,13 @@ def connexionSQlServer(server, base):
     return conn
 
 
-def getDataLink(connexion):
+def getDataLink(connexion, dates=None):
+    print(dates)
     if connexion:
         try:
             finds = extract_values_in_json('SQL')
-            dates = get_today()
+            if dates is None:
+                dates = get_today()
             resumer = {}
             details = None
             pal_1 = None
@@ -79,22 +81,23 @@ def getDataLink(connexion):
                             if all(isinstance(row, tuple) for row in rows):
                                 if str(key).replace("palm_", '') == 'today':
                                     pal_1 = pd.DataFrame(rows,
-                                                         columns=["REF", "DESIGNATION", "QTE", "MONTANT"])
+                                                         columns=["REF", "DESIGNATION", "QUANTITE", "MONTANT TTC"])
                                     # print(f"PALM 1 : {pal_1}")
                                 elif str(key).replace("palm_", '') == 'all':
                                     pal_2 = pd.DataFrame(rows,
-                                                         columns=["ARTICLE", "DESIGNATION", "QTE", "TTC"])
+                                                         columns=["ARTICLE", "DESIGNATION", "QUANTITE", "MONTANT TTC"])
                                     # print(f"PALM 2 : {pal_2}")
                         except Exception as e:
                             print(f"Erreur : {key}")
                             write_log(str(e))
                             pass
-            excel_1 = exportDataFrameEncaissement(resumer)
-            excel_2 = exportDataFrameSimple(details, "VENTE DU JOUR DETAIL", [4, 5, 6])
-            excel_3 = exportDataFrameSimple(pal_1, f"PALMARES PRODUIT {get_today().strftime("%d-%m-%Y")}", [3,4])
-            excel_4 = exportDataFrameSimple(pal_2, f"PALMARES PRODUIT DEPUIS", [3,4])
+            excel_1 = exportDataFrameEncaissement(resumer, dates)
+            excel_2 = exportDataFrameSimple(details, f"VENTE DU JOUR DETAIL {dates.strftime("%d-%m-%Y")}",
+                                            [4, 5, 6])
+            excel_3 = exportDataFrameSimple(pal_1, f"PALMARES PRODUIT {dates.strftime("%d-%m-%Y")}", [3, 4])
+            excel_4 = exportDataFrameSimple(pal_2, f"PALMARES PRODUIT DEPUIS", [3, 4])
 
-            storage_dir = f'storage/{get_today().strftime("%d-%m-%Y")}'
+            storage_dir = f'storage/{dates.strftime("%d-%m-%Y")}'
             if not os.path.exists(storage_dir):
                 os.makedirs(storage_dir)
             wb1 = load_workbook(excel_1)
@@ -157,11 +160,11 @@ def getDataLink(connexion):
             if wb4:
                 wb1 = copie_excel(wb1, wb4)
 
-            storage_out = f'storage/{get_today().strftime("%d-%m-%Y")}/output'
+            storage_out = f'storage/{dates.strftime("%d-%m-%Y")}/output'
             if not os.path.exists(storage_out):
                 os.makedirs(storage_out)
             merged_file_path = os.path.join(storage_out,
-                                            f'ETAT THE MEAT SHOP {get_today().strftime("%d-%m-%Y")}.xlsx')
+                                            f'ETAT THE MEAT SHOP {dates.strftime("%d-%m-%Y")}.xlsx')
             wb1.save(merged_file_path)
 
             print(f"Fichier fusionné enregistré à : {merged_file_path}")
@@ -173,34 +176,3 @@ def getDataLink(connexion):
             connexion.close()
 
         return None
-
-
-def getDetailInSQLServer(connexion):
-    data = {}
-
-    if connexion:
-        try:
-            finds = extract_values_in_json('SQL')
-            dates = get_today()
-            for key, value in finds.items():
-                if key in ['details']:
-                    with connexion.cursor() as cursor:
-                        query = str(value).replace(
-                            "{today}", dates.strftime('%m/%d/%Y')
-                        ).replace("{year}", dates.strftime('%Y')
-                                  ).replace('{month}', dates.strftime('%m'))
-                        print(f"Query : {query}")
-                        cursor.execute(query)
-                        rows = cursor.fetchall()
-                        tuples = []
-                        if rows:
-                            tuples = [tuple(row) for row in rows]
-                        data[key] = tuples
-
-            print(f"DATA: {data}")
-        except Exception as e:
-            write_log(f"Erreur Exception : {str(e)}")
-        finally:
-            connexion.close()
-
-        return data

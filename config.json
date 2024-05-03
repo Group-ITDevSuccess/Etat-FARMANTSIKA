@@ -6,11 +6,21 @@
     }
   ],
   "SQL": {
-    "details": "SELECT \nF_DOCLIGNE.DO_Piece, \nAR_Ref,\nDL_Design,\nDL_QTE,\nDL_MontantTTC/DL_qte AS PRIX, \nDL_MontantTTC,\nR_Intitule \nFROM F_DOCLIGNE  \ninner join F_DOCREGL on F_DOCLIGNE.DO_Piece=F_DOCREGL.DO_Piece and F_DOCLIGNE.DO_Type=F_DOCREGL.DO_Type \ninner join P_REGLEMENT on N_Reglement=cbIndice \nWHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0 and DO_Date='{today}' and F_DOCLIGNE.DO_Piece NOT IN ('104','2') ORDER BY F_DOCLIGNE.DO_Piece ASC\n",
+    "details": "SELECT \nF_DOCLIGNE.DO_Piece, \nAR_Ref,\nDL_Design,\nDL_QTE,\nDL_MontantTTC/DL_qte AS PRIX, \nDL_MontantTTC,\nR_Intitule \nFROM F_DOCLIGNE  \ninner join F_DOCREGL on F_DOCLIGNE.DO_Piece=F_DOCREGL.DO_Piece and F_DOCLIGNE.DO_Type=F_DOCREGL.DO_Type \ninner join P_REGLEMENT on N_Reglement=cbIndice \nWHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0 and DO_Date='{today}' ORDER BY F_DOCLIGNE.DO_Piece ASC\n",
     "palm_today": "SELECT AR_Ref,DL_Design,sum(DL_QTE), sum(DL_MontantTTC) FROM F_DOCLIGNE \n\nWHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0 and DO_Date='{today}'\ngroup by AR_Ref,DL_Design order by sum(DL_MontantTTC) desc\n",
-    "palm_all": "SELECT AR_Ref,DL_Design,sum(DL_QTE), sum(DL_MontantTTC) FROM F_DOCLIGNE \n\nWHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0 and DO_Piece not in ('2','104')\ngroup by AR_Ref,DL_Design order by sum(DL_MontantTTC) desc\n",
+    "palm_all": "SELECT AR_Ref,DL_Design,sum(DL_QTE), sum(DL_MontantTTC) FROM F_DOCLIGNE \n\nWHERE F_DOCLIGNE.DO_TYPE IN (6,7,30) and AR_Ref is not null and DL_Qte<>0\ngroup by AR_Ref,DL_Design order by sum(DL_MontantTTC) desc\n",
     "year": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT ON N_Reglement=cbIndice WHERE year(RG_Date)={year} GROUP BY R_Intitule",
     "month": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT on N_Reglement=cbIndice WHERE  year(RG_Date)={year} AND month(rg_date)={month} GROUP BY R_Intitule",
     "day": "SELECT R_Intitule, sum(rg_montant) FROM F_CREGLEMENT INNER JOIN P_REGLEMENT on N_Reglement=cbIndice WHERE  RG_Date='{today}' GROUP BY R_Intitule"
+  },
+  "CONFIGURATION": {
+    "FROM": "sagex3@inviso-group.com",
+    "CC": "muriel.raharison@inviso-group.com",
+    "LOGIN": "sagex3@inviso-group.com",
+    "PASSWORD": "Epbt2_9)Hw",
+    "HOST": "mail.inviso-group.com",
+    "PORT": 587,
+    "OBJET": "Etat The Meat Shop du {date}",
+    "MESSAGE": "Bonsoir,\n\nMerci de voir en attaché l'état de  \"THE MEAT SHOP\" à ce jour.\n\nCordialement,\n\n============= Mail Automatique =================\n\n                www.inviso-group.com\n                \n============= Sage X3 - {date} ===================="
   }
 }

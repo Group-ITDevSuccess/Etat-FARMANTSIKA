@@ -27,9 +27,60 @@ from entity.query import connexionSQlServer, getDataLink
 from utils import get_today, write_log
 
 
+def load_config():
+    with open('config.json', 'r', encoding='utf-8') as file:
+        json_file = json.load(file)
+    return json_file
+
+
+def modifier_objet(no, nouveau_statut):
+    try:
+        with open('historique.json', "r") as f:
+            data = json.load(f)
+
+        for obj in data:
+            if int(obj["No"]) == int(no):
+                obj["DateTime"] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                obj["Status"] = nouveau_statut
+
+        with open('historique.json', "w") as f:
+            json.dump(data, f, indent=4)
+        return True
+    except Exception as e:
+        print(f"Erreur de Modification : {str(e)}")
+        return False
+
+
+def custom_send_email(dates, recipient_email, attachment_filename):
+    json_file = load_config()
+
+    message_text = json_file['CONFIGURATION']['MESSAGE']
+    objet_text = json_file['CONFIGURATION']['OBJET']
+
+    message_text = message_text.replace("{date}", dates.strftime('%d/%m/%Y %H:%M:%S'))
+
+    message = EmailMessage()
+    message["Subject"] = objet_text.replace("{date}", dates.strftime('%d/%m/%Y'))
+    message["From"] = json_file['CONFIGURATION']['FROM']
+    message["To"] = recipient_email
+    message["Cc"] = json_file['CONFIGURATION']['CC']
+    message.set_content(message_text)
+    with open(attachment_filename, "rb") as file:
+        content = file.read()
+        attached_filename = os.path.basename(attachment_filename)
+        message.add_attachment(content, maintype="application", subtype="octet-stream",
+                               filename=attached_filename)
+    smtp_conf = json_file['CONFIGURATION']
+    with smtplib.SMTP(smtp_conf['HOST'], smtp_conf['PORT']) as server:
+        server.starttls()
+        server.login(smtp_conf['LOGIN'], smtp_conf['PASSWORD'])
+        server.send_message(message)
+
+
 class WinForm(QWidget):
     def __init__(self, parent=None):
         super(WinForm, self).__init__(parent)
+        self.executeBtn = None
         self.timer = None
         self.table_historique = None
         self.validate_button = None
@@ -145,9 +196,9 @@ class WinForm(QWidget):
         target_time_layout.addWidget(self.target_second_edit)
         # target_time_layout.addWidget(self.day_label)
         # target_time_layout.addWidget(self.day_combo)
-        target_time_layout.addWidget(self.startBtn)  # Ajouter le bouton "Start" après les champs Heure
-        target_time_layout.addWidget(self.endBtn)  # Ajouter le bouton "Stop" après le bouton "Start"
-        target_time_layout.addWidget(self.executeBtn)  # Ajouter le bouton "Stop" après le bouton "Start"
+        target_time_layout.addWidget(self.startBtn)
+        target_time_layout.addWidget(self.endBtn)
+        target_time_layout.addWidget(self.executeBtn)
 
         layout.addLayout(target_time_layout)
         layout.addWidget(self.label)
@@ -163,48 +214,11 @@ class WinForm(QWidget):
 
         self.setLayout(layout)
 
-    def load_config(self):
-        with open('config.json', 'r', encoding='utf-8') as file:
-            json_file = json.load(file)
-        return json_file
-
-    def custom_send_email(self, recipient_name, recipient_email, attachment_filename):
-        sender_email = "sagex3@inviso-group.com"
-        message_text = f"""
-Bonjour Mr {recipient_name},
-
-Voici ci-jointe l'Etat The Meat Shop  du {get_today().strftime("%d/%m/%Y")}
-
-Cordialement,
-
-============= Mail Automatique =================
-
-                www.inviso-group.com
-                
-============= Sage X3 - 2024 ====================
-"""
-        message = EmailMessage()
-        message["Subject"] = f"Etat The Meat Shop du {get_today().strftime('%d/%m/%Y')}"
-        message["From"] = sender_email
-        message["To"] = recipient_email
-        message["Cc"] = "sage@inviso-group.com, muriel@inviso-group.com"
-        message.set_content(message_text)
-        with open(attachment_filename, "rb") as file:
-            content = file.read()
-            attached_filename = os.path.basename(attachment_filename)
-            message.add_attachment(content, maintype="application", subtype="octet-stream",
-                                   filename=attached_filename)
-        with smtplib.SMTP("mail.inviso-group.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, 'Epbt2_9)Hw')
-            server.send_message(message)
-
     def filter_historique_table(self, search_text):
         self.table_historique.setRowCount(0)  # Clear the table before filtering
 
         for item in self.data_historique:
             if search_text.lower() in item['Destinataire'].lower() or search_text.lower() in item['Email'].lower():
-                # Add row to the table for matching items
                 row_position = self.table_historique.rowCount()
                 self.table_historique.insertRow(row_position)
 
@@ -272,48 +286,34 @@ Cordialement,
                 finally:
                     self.load_destination_from_json()
 
-    def modifier_objet(self, no, nouveau_statut):
-        try:
-            with open('historique.json', "r") as f:
-                data = json.load(f)
-
-            for obj in data:
-                if int(obj["No"]) == int(no):
-                    obj["DateTime"] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    obj["Status"] = nouveau_statut
-
-            with open('historique.json', "w") as f:
-                json.dump(data, f, indent=4)
-            return True
-        except Exception as e:
-            print(f"Erreur de Modification : {str(e)}")
-            return False
-
     def resend_row_from_table(self, row):
         confirm_delete = QMessageBox.question(self, 'Confirmation', 'Êtes-vous sûr de vouloir renvoyer cette mail ?',
                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirm_delete == QMessageBox.Yes:
-            id_item = self.table_historique.item(row, 0)
-            name_item = self.table_historique.item(row, 1)
-            email_item = self.table_historique.item(row, 2)
+            id_item = self.table_historique.item(row, 0).text()
+            date_item = self.table_historique.item(row, 1).text()
+            email_item = self.table_historique.item(row, 2).text()
+            name_item = self.table_historique.item(row, 3).text()
+            # print("On a : ",id_item.text(), date_item.text(), email_item.text(), name_item.text())
             if id_item is not None:
                 try:
-                    id_to_resend = id_item.text()
+                    id_to_resend = id_item
+                    dates = datetime.datetime.strptime(date_item, "%d/%m/%Y %H:%M:%S")
                     new_status = False
                     try:
-                        json_file = self.load_config()
+                        json_file = load_config()
                         connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'],
                                                        base=json_file['SOCIETE'][0]['base'])
-                        filename = getDataLink(connexion)
-                        self.custom_send_email(recipient_name=name_item, recipient_email=email_item,
-                                               attachment_filename=filename)
+                        filename = getDataLink(connexion, dates)
+                        custom_send_email(dates=dates, recipient_email=email_item,
+                                          attachment_filename=filename)
                         new_status = True
                         print(f"Mail envoyer vers : {email_item}")
 
                     except Exception as e:
                         write_log(str(e))
 
-                    self.modifier_objet(id_to_resend, new_status)
+                    modifier_objet(id_to_resend, new_status)
                     print(f"Modification Faite sur N° {id_to_resend}")
                 except Exception as e:
                     print(f"Erreur : {str(e)}")
@@ -458,9 +458,6 @@ Cordialement,
             print(str(e))
             pass
 
-    def get_target_day_offset(self):
-        return 1
-
     def recalculate_target_time(self):
         self.target_time = self.target_time.addDays(1)  # Ajoutez un jour au lieu de 7 jours
         self.label.setText(self.get_time_remaining_text())
@@ -470,7 +467,7 @@ Cordialement,
 
     def calculate_time_remaining(self):
         current_time = QDateTime.currentDateTime()
-        target_datetime = self.target_time.addDays(self.get_target_day_offset())
+        target_datetime = self.target_time.addDays(1)
 
         diff_seconds = current_time.secsTo(target_datetime)
 
@@ -480,7 +477,6 @@ Cordialement,
                 diff_seconds += (diff_days * 86400)  # Adjust diff_seconds based on days difference
             else:
                 diff_seconds = -diff_seconds  # Handle negative diff_seconds appropriately
-        diff_days = diff_seconds // 86400  # Calculate remaining days
 
         diff_seconds %= 86400  # Get remaining seconds in the day
 
@@ -488,9 +484,6 @@ Cordialement,
         minutes, seconds = divmod(remainder, 60)
 
         time_left = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-        if time_left == "00:00:00":
-            print('email envoyé')
 
         return time_left
 
@@ -509,7 +502,7 @@ Cordialement,
 
         with open('destination.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
-        json_file = self.load_config()
+        json_file = load_config()
         connexion = connexionSQlServer(server=json_file['SOCIETE'][0]['server'], base=json_file['SOCIETE'][0]['base'])
         filename = getDataLink(connexion)
 
@@ -518,8 +511,8 @@ Cordialement,
                 if item['Status']:
                     status = False
                     try:
-                        self.custom_send_email(recipient_name=item['Nom'], recipient_email=item['Email'],
-                                               attachment_filename=filename)
+                        custom_send_email(dates=get_today(), recipient_email=item['Email'],
+                                          attachment_filename=filename)
                         status = True
                         # print(f"Mail envoyer vers : {item['Email']}")
                     except Exception as e:
@@ -528,7 +521,7 @@ Cordialement,
                         'No': next_no,
                         'Destinataire': item['Nom'],
                         'Email': item['Email'],
-                        'DateTime': datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        'DateTime': get_today().strftime("%d/%m/%Y %H:%M:%S"),
                         'Status': status
                     })
                     next_no += 1  # Increment N° for the next entry

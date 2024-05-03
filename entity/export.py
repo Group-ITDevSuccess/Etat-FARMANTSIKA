@@ -6,10 +6,10 @@ from openpyxl.styles import Border, Side, PatternFill, Font
 from utils import get_today
 
 
-def exportDataFrameEncaissement(df):
+def exportDataFrameEncaissement(df, dates):
+
     wb = Workbook()
     ws = wb.active
-    today = get_today()
     # Renommer la feuille de calcul
     ws.title = "ENCAISSEMENT"
 
@@ -26,7 +26,7 @@ def exportDataFrameEncaissement(df):
             formatted_data[intitule][key] = amount
     formatted_data['Fond de Caisse'] = {'day': 0, 'month': 200000, 'year': 200000}
     # Écrire les en-têtes des colonnes avec mise en forme
-    header_row = ['INTITULE', f'{today.strftime("%d/%m/%Y")}', 'CUMUL MOIS', 'CUMUL ANNEE']
+    header_row = ['INTITULE', f'{dates.strftime("%d/%m/%Y")}', 'CUMUL MOIS', 'CUMUL ANNEE']
     ws.append(header_row)
     for cell in ws[1]:
         cell.font = Font(bold=True)  # Rendre l'entête en gras
@@ -73,7 +73,7 @@ def exportDataFrameEncaissement(df):
         ws.column_dimensions[column_cells[0].column_letter].width = length + 2
 
     # Sauvegarder le fichier Excel
-    storage_dir = f'storage/{get_today().strftime("%d-%m-%Y")}'
+    storage_dir = f'storage/{dates.strftime("%d-%m-%Y")}'
     if not os.path.exists(storage_dir):
         os.makedirs(storage_dir)
 
